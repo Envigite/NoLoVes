@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface CarouselItem {
@@ -37,31 +37,51 @@ const carouselItems: CarouselItem[] = [
 
 const HeaderCarousel = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  useEffect(() => {
-    const timer = setInterval(() => {
+  const startTimer = () => {
+    // Limpiar el temporizador anterior si existe
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
+
+    // Crear un nuevo temporizador
+    timerRef.current = setInterval(() => {
       setCurrentIndex((prevIndex) =>
         prevIndex === carouselItems.length - 1 ? 0 : prevIndex + 1,
       );
     }, 5000);
+  };
 
-    return () => clearInterval(timer);
+  useEffect(() => {
+    // Iniciar el temporizador cuando el componente se monta
+    startTimer();
+
+    // Limpiar el temporizador cuando el componente se desmonta
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
   }, []);
 
   const handleDotClick = (index: number) => {
     setCurrentIndex(index);
+    startTimer(); // Reiniciar el temporizador cuando se hace clic en un punto
   };
 
   const handlePrevious = () => {
     setCurrentIndex((prevIndex) =>
       prevIndex === 0 ? carouselItems.length - 1 : prevIndex - 1,
     );
+    startTimer(); // Reiniciar el temporizador cuando se navega a la imagen anterior
   };
 
   const handleNext = () => {
     setCurrentIndex((prevIndex) =>
       prevIndex === carouselItems.length - 1 ? 0 : prevIndex + 1,
     );
+    startTimer(); // Reiniciar el temporizador cuando se navega a la siguiente imagen
   };
 
   return (
