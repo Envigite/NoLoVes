@@ -9,7 +9,8 @@ export interface IProduct extends Document {
   stock: number;
   createdAt: Date;
   updatedAt: Date;
-  category: string;
+  categories: string[]; // IDs de categorías
+  subcategories: string[]; // IDs de subcategorías
   isVisible: boolean;
 }
 
@@ -21,7 +22,8 @@ const ProductSchema: Schema = new Schema(
     price: { type: Number, required: true, min: 0 },
     imageUrl: { type: String, required: true },
     stock: { type: Number, required: true, default: 0, min: 0 },
-    category: { type: String, required: true },
+    categories: { type: [String], required: true, default: [] },
+    subcategories: { type: [String], default: [] }, // Array de IDs de subcategorías
     isVisible: { type: Boolean, default: true },
   },
   { timestamps: true } // Esto añadirá automáticamente createdAt y updatedAt

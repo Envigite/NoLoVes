@@ -8,12 +8,15 @@ interface Params {
   };
 }
 
-// GET - Obtener un producto por ID
-export async function GET(request: NextRequest, { params }: Params) {
+// GET - Obtener un producto específico
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
     const { id } = params;
-    
     await connectDB();
+    
     const product = await Product.findById(id);
     
     if (!product) {
@@ -23,7 +26,7 @@ export async function GET(request: NextRequest, { params }: Params) {
       );
     }
     
-    return NextResponse.json(product, { status: 200 });
+    return NextResponse.json(product);
   } catch (error) {
     console.error('Error al obtener el producto:', error);
     return NextResponse.json(
@@ -33,17 +36,37 @@ export async function GET(request: NextRequest, { params }: Params) {
   }
 }
 
-// PUT - Actualizar un producto por ID
-export async function PUT(request: NextRequest, { params }: Params) {
+// PUT - Actualizar un producto
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
     const { id } = params;
-    const body = await request.json();
+    const data = await request.json();
     
     await connectDB();
     
+    // Validación básica
+    if (!data.title || !data.description || data.price === undefined || !data.imageUrl) {
+      return NextResponse.json(
+        { error: 'Faltan campos obligatorios' },
+        { status: 400 }
+      );
+    }
+    
     const updatedProduct = await Product.findByIdAndUpdate(
       id,
-      { ...body, updatedAt: new Date() },
+      {
+        title: data.title,
+        description: data.description,
+        price: data.price,
+        imageUrl: data.imageUrl,
+        stock: data.stock || 0,
+        categories: data.categories || [],
+        subcategories: data.subcategories || [],
+        isVisible: data.isVisible !== undefined ? data.isVisible : true,
+      },
       { new: true, runValidators: true }
     );
     
@@ -54,7 +77,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
       );
     }
     
-    return NextResponse.json(updatedProduct, { status: 200 });
+    return NextResponse.json(updatedProduct);
   } catch (error) {
     console.error('Error al actualizar el producto:', error);
     return NextResponse.json(
@@ -64,12 +87,15 @@ export async function PUT(request: NextRequest, { params }: Params) {
   }
 }
 
-// DELETE - Eliminar un producto por ID
-export async function DELETE(request: NextRequest, { params }: Params) {
+// DELETE - Eliminar un producto
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
     const { id } = params;
-    
     await connectDB();
+    
     const deletedProduct = await Product.findByIdAndDelete(id);
     
     if (!deletedProduct) {
@@ -79,7 +105,7 @@ export async function DELETE(request: NextRequest, { params }: Params) {
       );
     }
     
-    return NextResponse.json({ message: 'Producto eliminado correctamente' }, { status: 200 });
+    return NextResponse.json({ message: 'Producto eliminado correctamente' });
   } catch (error) {
     console.error('Error al eliminar el producto:', error);
     return NextResponse.json(

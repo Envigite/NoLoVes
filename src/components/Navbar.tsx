@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 import {
   Search,
   User,
@@ -145,19 +146,18 @@ const Navbar = () => {
     <nav className="fixed top-0 left-0 w-full h-16 bg-gray-100 z-50 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 h-full flex items-center justify-between">
         <div className="h-10 w-32">
-          <a
-            href="#"
+          <Link
+            href="/"
             onClick={(e) => {
-              e.preventDefault();
               window.scrollTo({ top: 0, behavior: "smooth" });
             }}
           >
             <img
-              src="./images/ojo-verde.png"
+              src="/images/ojo-verde.png"
               alt="Logo"
               className="h-full w-full object-contain"
             />
-          </a>
+          </Link>
         </div>
         <div
           className={`fixed inset-0 bg-black transition-opacity duration-300 z-40 ${
@@ -238,24 +238,33 @@ const Navbar = () => {
             </div>
           </div>
 
-          <a
-            href="#"
+          <Link
+            href="/productos"
             className="text-gray-600 hover:text-green-500 transition-colors duration-300"
           >
-            Productos destacados
-          </a>
-          <a
-            href="#"
+            Productos
+          </Link>
+
+          <Link
+            href="/nosotros"
             className="text-gray-600 hover:text-green-500 transition-colors duration-300"
           >
-            Sobre Nosotros
-          </a>
-          <a
-            href="#"
+            Nosotros
+          </Link>
+
+          <Link
+            href="/contacto"
             className="text-gray-600 hover:text-green-500 transition-colors duration-300"
           >
             Contacto
-          </a>
+          </Link>
+
+          <Link
+            href="/dashboard"
+            className="text-gray-600 hover:text-green-500 transition-colors duration-300"
+          >
+            Admin
+          </Link>
         </div>
 
         {/* Mobile Navigation */}
@@ -460,32 +469,49 @@ const Navbar = () => {
             {categoriesOpen && (
               <div className="pl-4 border-l-2 border-gray-200 space-y-2">
                 {categories.map((category, index) => (
-                  <a
-                    key={index}
-                    href="#"
-                    className="block py-1 text-gray-700 hover:text-green-500"
-                  >
-                    {/* {category} */}
-                  </a>
+                  <div key={index} className="py-1">
+                    <button
+                      className="flex items-center justify-between w-full text-gray-700 hover:text-green-500"
+                      onClick={(e) => handleMobileCategoryClick(index, e)}
+                    >
+                      <span>{category.name}</span>
+                      <ChevronDown
+                        size={14}
+                        className={`transition-transform ${
+                          mobileSelectedCategory === index ? "rotate-180" : ""
+                        }`}
+                      />
+                    </button>
+                    {/* Resto del código existente para las subcategorías */}
+                  </div>
                 ))}
               </div>
             )}
 
-            <a href="#" className="py-2 text-gray-600 border-b border-gray-200">
-              Productos Destacados
-            </a>
-            <a href="#" className="py-2 text-gray-600 border-b border-gray-200">
-              Sobre Nosotros
-            </a>
-            <a href="#" className="py-2 text-gray-600 border-b border-gray-200">
+            <Link
+              href="/productos"
+              className="py-2 text-gray-600 border-b border-gray-200"
+            >
+              Productos
+            </Link>
+            <Link
+              href="/nosotros"
+              className="py-2 text-gray-600 border-b border-gray-200"
+            >
+              Nosotros
+            </Link>
+            <Link
+              href="/contacto"
+              className="py-2 text-gray-600 border-b border-gray-200"
+            >
               Contacto
-            </a>
-            <a href="#" className="py-2 text-gray-600 border-b border-gray-200">
-              Iniciar Sesión
-            </a>
-            <a href="#" className="py-2 text-gray-600">
-              Registrarse
-            </a>
+            </Link>
+            <Link
+              href="/dashboard"
+              className="py-2 text-gray-600 border-b border-gray-200"
+            >
+              Admin
+            </Link>
           </div>
         </div>
       )}

@@ -3,12 +3,15 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Save, ArrowLeft } from "lucide-react";
+import { Save, ArrowLeft, Search, ChevronDown, ChevronUp } from "lucide-react";
+import { CATEGORIES } from "@/constants/categories";
 
 export default function NewProductPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -16,9 +19,38 @@ export default function NewProductPage() {
     price: "",
     imageUrl: "",
     stock: "",
-    category: "",
+    categories: [] as string[],
+    subcategories: [] as string[],
     isVisible: true,
   });
+
+  // Filtrar categorías basado en el término de búsqueda
+  const filteredCategories = CATEGORIES.filter(
+    (category) =>
+      category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      category.subcategories.some((sub) =>
+        sub.name.toLowerCase().includes(searchTerm.toLowerCase()),
+      ),
+  );
+
+  const toggleCategoryExpansion = (categoryId: string) => {
+    setExpandedCategories((prev) =>
+      prev.includes(categoryId)
+        ? prev.filter((id) => id !== categoryId)
+        : [...prev, categoryId],
+    );
+  };
+
+  // Añadir un botón para expandir/colapsar todas las categorías
+  const toggleAllCategories = () => {
+    if (expandedCategories.length === CATEGORIES.length) {
+      // Si todas están expandidas, colapsar todas
+      setExpandedCategories([]);
+    } else {
+      // Si no todas están expandidas, expandir todas
+      setExpandedCategories(CATEGORIES.map((cat) => cat.id));
+    }
+  };
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -27,21 +59,91 @@ export default function NewProductPage() {
   ) => {
     const { name, value, type } = e.target as HTMLInputElement;
 
-    setFormData((prev) => ({
-      ...prev,
-      [name]:
-        type === "checkbox"
-          ? (e.target as HTMLInputElement).checked
-          : name === "price" || name === "stock"
+    if (type === "checkbox") {
+      const isChecked = (e.target as HTMLInputElement).checked;
+
+      if (name === "category") {
+        // Para las categorías (que son checkboxes con name="category")
+        const categoryId = value;
+
+        setFormData((prev) => {
+          if (isChecked) {
+            // Añadir categoría si no está ya en el array
+            return {
+              ...prev,
+              categories: [...prev.categories, categoryId],
+            };
+          } else {
+            // Quitar categoría del array y también todas sus subcategorías
+            const category = CATEGORIES.find((cat) => cat.id === categoryId);
+
+            return {
+              ...prev,
+              categories: prev.categories.filter((cat) => cat !== categoryId),
+              // Filtrar todas las subcategorías que pertenecen a esta categoría
+              subcategories: prev.subcategories.filter(
+                (sub) => !sub.startsWith(`${categoryId}-`),
+              ),
+            };
+          }
+        });
+      } else if (name === "subcategory") {
+        // Para las subcategorías
+        const subcategoryId = value;
+        const [categoryId, subId] = subcategoryId.split("-"); // Formato "categoryId-subcategoryId"
+
+        setFormData((prev) => {
+          if (isChecked) {
+            // Añadir subcategoría y siempre marcar la categoría padre
+            const updatedCategories = prev.categories.includes(categoryId)
+              ? prev.categories
+              : [...prev.categories, categoryId];
+
+            return {
+              ...prev,
+              categories: updatedCategories,
+              subcategories: [...prev.subcategories, subcategoryId],
+            };
+          } else {
+            // Quitar subcategoría pero mantener la categoría padre
+            return {
+              ...prev,
+              subcategories: prev.subcategories.filter(
+                (sub) => sub !== subcategoryId,
+              ),
+            };
+          }
+        });
+      } else {
+        // Para otros checkboxes (como isVisible)
+        setFormData((prev) => ({
+          ...prev,
+          [name]: isChecked,
+        }));
+      }
+    } else {
+      // Para otros tipos de input (text, number, etc.)
+      setFormData((prev) => ({
+        ...prev,
+        [name]:
+          name === "price" || name === "stock"
             ? value === ""
               ? ""
               : parseFloat(value) || 0
             : value,
-    }));
+      }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validar que se haya seleccionado al menos una categoría
+    if (formData.categories.length === 0) {
+      setError("Debes seleccionar al menos una categoría");
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -183,30 +285,6 @@ export default function NewProductPage() {
             <div className="space-y-4">
               <div>
                 <label
-                  htmlFor="category"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  Categoría <span className="text-red-500">*</span>
-                </label>
-                <select
-                  id="category"
-                  name="category"
-                  value={formData.category}
-                  onChange={handleChange}
-                  required
-                  className="w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                >
-                  <option value="">Seleccionar categoría</option>
-                  <option value="Aire">Aire</option>
-                  <option value="Pensamientos">Pensamientos</option>
-                  <option value="Emociones">Emociones</option>
-                  <option value="Sentimientos">Sentimientos</option>
-                  <option value="Otros">Otros</option>
-                </select>
-              </div>
-
-              <div>
-                <label
                   htmlFor="price"
                   className="block text-sm font-medium text-gray-700 mb-1"
                 >
@@ -258,6 +336,162 @@ export default function NewProductPage() {
                 >
                   Visible para los clientes
                 </label>
+              </div>
+            </div>
+          </div>
+
+          {/* Sección de categorías y subcategorías */}
+          <div className="mt-8">
+            <div className="flex justify-between items-center mb-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Categorías y Subcategorías{" "}
+                <span className="text-red-500">*</span>
+              </label>
+              <button
+                type="button"
+                onClick={toggleAllCategories}
+                className="text-sm text-blue-600 hover:text-blue-800"
+              >
+                {expandedCategories.length === CATEGORIES.length
+                  ? "Colapsar todas"
+                  : "Expandir todas"}
+              </button>
+            </div>
+
+            <div className="mb-4 flex">
+              <div className="relative flex-grow">
+                <input
+                  type="text"
+                  placeholder="Buscar categorías o subcategorías..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full border border-gray-300 rounded-l-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                />
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                  <Search size={16} className="text-gray-400" />
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSearchTerm("")}
+                className="bg-gray-200 text-gray-700 px-4 rounded-r-md hover:bg-gray-300"
+              >
+                Limpiar
+              </button>
+            </div>
+
+            <div className="max-h-96 overflow-y-auto border border-gray-200 rounded-md p-4">
+              {filteredCategories.map((category) => (
+                <div
+                  key={category.id}
+                  className="mb-4 border-b pb-2 last:border-0"
+                >
+                  <div
+                    className="flex items-center mb-2 cursor-pointer hover:bg-gray-50 p-1 rounded-md"
+                    onClick={() => toggleCategoryExpansion(category.id)}
+                  >
+                    <input
+                      type="checkbox"
+                      id={`category-${category.id}`}
+                      name="category"
+                      value={category.id}
+                      checked={formData.categories.includes(category.id)}
+                      onChange={handleChange}
+                      className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                      onClick={(e) => e.stopPropagation()} // Evitar que el clic en el checkbox expanda la categoría
+                    />
+                    <label
+                      htmlFor={`category-${category.id}`}
+                      className="ml-2 text-sm font-medium text-gray-700 cursor-pointer flex-grow"
+                      onClick={(e) => e.stopPropagation()} // Evitar que el clic en la etiqueta expanda la categoría
+                    >
+                      {category.name}
+                      {/* Mostrar contador de subcategorías */}
+                      <span className="text-xs text-gray-500 ml-2">
+                        ({category.subcategories.length} subcategorías)
+                      </span>
+                    </label>
+                    <button
+                      type="button"
+                      className="text-gray-500 hover:text-gray-700"
+                      aria-label={
+                        expandedCategories.includes(category.id)
+                          ? "Colapsar subcategorías"
+                          : "Expandir subcategorías"
+                      }
+                    >
+                      {expandedCategories.includes(category.id) ? (
+                        <ChevronUp size={16} />
+                      ) : (
+                        <ChevronDown size={16} />
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Subcategorías */}
+                  {expandedCategories.includes(category.id) && (
+                    <div className="ml-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                      {category.subcategories.map((subcategory) => {
+                        const subcategoryFullId = `${category.id}-${subcategory.id}`;
+                        return (
+                          <div
+                            key={subcategory.id}
+                            className="flex items-center"
+                          >
+                            <input
+                              type="checkbox"
+                              id={`subcategory-${subcategoryFullId}`}
+                              name="subcategory"
+                              value={subcategoryFullId}
+                              checked={formData.subcategories.includes(
+                                subcategoryFullId,
+                              )}
+                              onChange={(e) => {
+                                // Asegurarse de que también se seleccione la categoría principal
+                                const isChecked = e.target.checked;
+                                if (
+                                  isChecked &&
+                                  !formData.categories.includes(category.id)
+                                ) {
+                                  // Si está marcando la subcategoría y la categoría principal no está seleccionada
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    categories: [
+                                      ...prev.categories,
+                                      category.id,
+                                    ],
+                                    subcategories: [
+                                      ...prev.subcategories,
+                                      subcategoryFullId,
+                                    ],
+                                  }));
+                                } else {
+                                  // Comportamiento normal
+                                  handleChange(e);
+                                }
+                              }}
+                              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                            />
+                            <label
+                              htmlFor={`subcategory-${subcategoryFullId}`}
+                              className="ml-2 text-sm text-gray-600 flex items-center"
+                            >
+                              <span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-1"></span>
+                              {subcategory.name}
+                            </label>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-2 text-sm text-gray-500">
+              <div>Categorías seleccionadas: {formData.categories.length}</div>
+              <div>
+                Subcategorías seleccionadas: {formData.subcategories.length}
               </div>
             </div>
           </div>

@@ -3,13 +3,15 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { PlusCircle } from "lucide-react";
+import { CATEGORIES } from "@/constants/categories";
 
 interface Product {
   _id: string;
   title: string;
   price: number;
   stock: number;
-  category: string;
+  categories: string[];
+  subcategories: string[];
   imageUrl: string;
   isVisible: boolean;
   createdAt: string;
@@ -19,6 +21,28 @@ export default function Dashboard() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Función para obtener el nombre de una categoría por su ID
+  const getCategoryNameById = (categoryId: string): string => {
+    const category = CATEGORIES.find((cat) => cat.id === categoryId);
+    return category ? category.name : categoryId;
+  };
+
+  // Función para obtener el nombre de una subcategoría por su ID compuesto
+  const getSubcategoryNameById = (
+    subcategoryId: string,
+  ): { name: string; categoryName: string } => {
+    const [categoryId, subId] = subcategoryId.split("-");
+    const category = CATEGORIES.find((cat) => cat.id === categoryId);
+
+    if (!category) return { name: subcategoryId, categoryName: "" };
+
+    const subcategory = category.subcategories.find((sub) => sub.id === subId);
+    return {
+      name: subcategory ? subcategory.name : subcategoryId,
+      categoryName: category.name,
+    };
+  };
 
   // Cargar productos
   useEffect(() => {
@@ -118,7 +142,7 @@ export default function Dashboard() {
                     Stock
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Categoría
+                    Categorías y Subcategorías
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Creado
@@ -168,9 +192,42 @@ export default function Dashboard() {
                           {product.stock}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {product.category}
+                      <td className="px-6 py-4">
+                        <div className="flex flex-wrap gap-1 max-w-xs">
+                          {/* Categorías */}
+                          {product.categories &&
+                          product.categories.length > 0 ? (
+                            product.categories.map((categoryId, idx) => (
+                              <span
+                                key={`${product._id}-cat-${idx}`}
+                                className="inline-flex text-xs leading-5 font-semibold rounded-full px-2 py-1 bg-blue-100 text-blue-800 mb-1"
+                                title={getCategoryNameById(categoryId)}
+                              >
+                                {getCategoryNameById(categoryId)}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-sm text-gray-500">
+                              Sin categoría
+                            </span>
+                          )}
+
+                          {/* Subcategorías */}
+                          {product.subcategories &&
+                            product.subcategories.length > 0 &&
+                            product.subcategories.map((subcategoryId, idx) => {
+                              const { name, categoryName } =
+                                getSubcategoryNameById(subcategoryId);
+                              return (
+                                <span
+                                  key={`${product._id}-subcat-${idx}`}
+                                  className="inline-flex text-xs leading-5 font-semibold rounded-full px-2 py-1 bg-green-100 text-green-800 mb-1"
+                                  title={`${categoryName} > ${name}`}
+                                >
+                                  {name}
+                                </span>
+                              );
+                            })}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
