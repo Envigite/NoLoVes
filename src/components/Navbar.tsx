@@ -10,91 +10,46 @@ import {
   ChevronRight,
   Menu,
   X,
+  Filter,
+  Eye,
+  Clock,
+  TrendingUp,
+  Star,
+  Tag,
+  Grid,
+  LayoutGrid,
 } from "lucide-react";
+import { CATEGORIES } from "@/constants/categories";
+import SearchAutocomplete from "./SearchAutocomplete";
 
 const Navbar = () => {
   const [categoriesOpen, setCategoriesOpen] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileCategoriesOpen, setMobileCategoriesOpen] = useState(false);
   const [mobileSelectedCategory, setMobileSelectedCategory] = useState<
-    number | null
+    string | null
   >(null);
+  const [searchTerm, setSearchTerm] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
-  const categories = [
-    {
-      name: "Herramientas",
-      subcategories: [
-        {
-          name: "Herramientas Eléctricas",
-          items: [
-            "Esmeril invisible",
-            "Taladro phantom",
-            "Sierra cinta etérea",
-          ],
-        },
-        {
-          name: "Herramientas de Carpintería",
-          items: [
-            "Martillos invisibles",
-            "Sierras de aire",
-            "Cepillos volátiles",
-          ],
-        },
-      ],
-    },
-    {
-      name: "Jardinería",
-      subcategories: [
-        {
-          name: "Equipos de Riego",
-          items: [
-            "Aspersor inteligente",
-            "Manguera extensible",
-            "Temporizador de agua",
-          ],
-        },
-        {
-          name: "Plantas y Semillas",
-          items: [
-            "Semillas orgánicas",
-            "Plantas de interior",
-            "Árboles frutales",
-          ],
-        },
-      ],
-    },
-    {
-      name: "Materiales",
-      subcategories: [
-        {
-          name: "Materiales de Construcción",
-          items: ["Cemento premium", "Ladrillos reforzados", "Madera tratada"],
-        },
-        {
-          name: "Pinturas y Acabados",
-          items: [
-            "Pinturas ecológicas",
-            "Barnices naturales",
-            "Esmaltes decorativos",
-          ],
-        },
-      ],
-    },
-  ];
+  const navbarRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const categoriesRef = useRef<HTMLDivElement>(null);
 
+  // Efecto para manejar clics fuera del navbar
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
+        navbarRef.current &&
+        !navbarRef.current.contains(event.target as Node)
       ) {
         setCategoriesOpen(false);
         setSelectedCategory(null);
         setUserMenuOpen(false);
+        setFiltersOpen(false);
       }
     };
 
@@ -104,6 +59,7 @@ const Navbar = () => {
     };
   }, []);
 
+  // Cerrar menú móvil en redimensionamiento
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth >= 768) {
@@ -117,8 +73,22 @@ const Navbar = () => {
     };
   }, []);
 
+  // Enfocar el input de búsqueda cuando se abre
+  useEffect(() => {
+    if (searchOpen && searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  }, [searchOpen]);
+
+  // Funciones de toggle
   const toggleCategories = () => {
     setCategoriesOpen(!categoriesOpen);
+    if (filtersOpen) setFiltersOpen(false);
+  };
+
+  const toggleFilters = () => {
+    setFiltersOpen(!filtersOpen);
+    if (categoriesOpen) setCategoriesOpen(false);
   };
 
   const toggleUserMenu = () => {
@@ -129,392 +99,495 @@ const Navbar = () => {
     setMobileMenuOpen(!mobileMenuOpen);
   };
 
-  const toggleMobileCategories = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.stopPropagation();
-    setMobileCategoriesOpen(!mobileCategoriesOpen);
+  const toggleSearch = () => {
+    setSearchOpen(!searchOpen);
   };
 
-  const handleMobileCategoryClick = (
-    index: number,
-    e: React.MouseEvent<HTMLButtonElement>,
-  ) => {
-    e.stopPropagation();
-    setMobileSelectedCategory(mobileSelectedCategory === index ? null : index);
+  const handleSearch = (query: string) => {
+    console.log("Buscando:", query);
+    // Redirigir a la página de productos con el término de búsqueda
+    if (query.trim()) {
+      window.location.href = `/productos?q=${encodeURIComponent(query)}`;
+    }
+    // Cerrar el menú de búsqueda en móvil
+    setSearchOpen(false);
+  };
+
+  // Función para generar URL de categoría
+  const getCategoryUrl = (categoryId: string) => {
+    return `/productos/categoria/${categoryId}`;
+  };
+
+  // Función para generar URL de subcategoría
+  const getSubcategoryUrl = (categoryId: string, subcategoryId: string) => {
+    return `/productos/categoria/${categoryId}/${subcategoryId}`;
+  };
+
+  // Función para obtener color de categoría
+  const getCategoryColor = (index: number) => {
+    const colors = [
+      "from-green-500 to-emerald-700",
+      "from-blue-500 to-indigo-700",
+      "from-purple-500 to-purple-800",
+      "from-pink-500 to-rose-700",
+      "from-yellow-500 to-amber-700",
+      "from-red-500 to-red-800",
+      "from-indigo-500 to-blue-800",
+      "from-teal-500 to-teal-800",
+    ];
+    return colors[index % colors.length];
+  };
+
+  // Función para obtener icono de categoría
+  const getCategoryIcon = (index: number) => {
+    const icons = [
+      <Eye key="eye" size={18} />,
+      <Clock key="clock" size={18} />,
+      <TrendingUp key="trending" size={18} />,
+      <Star key="star" size={18} />,
+      <Filter key="filter" size={18} />,
+    ];
+    return icons[index % icons.length];
   };
 
   return (
-    <nav className="fixed top-0 left-0 w-full h-16 bg-gray-100 z-50 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 h-full flex items-center justify-between">
-        <div className="h-10 w-32">
-          <Link
-            href="/"
-            onClick={(e) => {
-              window.scrollTo({ top: 0, behavior: "smooth" });
-            }}
-          >
-            <img
-              src="/images/ojo-verde.png"
-              alt="Logo"
-              className="h-full w-full object-contain"
-            />
-          </Link>
-        </div>
-        <div
-          className={`fixed inset-0 bg-black transition-opacity duration-300 z-40 ${
-            categoriesOpen || mobileMenuOpen
-              ? "opacity-50"
-              : "opacity-0 pointer-events-none"
-          }`}
-          onClick={() => {
-            setCategoriesOpen(false);
-            setSelectedCategory(null);
-            setMobileMenuOpen(false);
-          }}
-        />
+    <nav
+      className="fixed top-0 left-0 w-full z-50 shadow-md bg-gradient-to-r from-white via-white to-green-50"
+      ref={navbarRef}
+    >
+      {/* Overlay para fondos oscuros cuando los menús están abiertos */}
+      <div
+        className={`fixed inset-0 bg-black transition-opacity duration-300 z-40 ${
+          categoriesOpen || mobileMenuOpen || filtersOpen
+            ? "opacity-50"
+            : "opacity-0 pointer-events-none"
+        }`}
+        onClick={() => {
+          setCategoriesOpen(false);
+          setSelectedCategory(null);
+          setMobileMenuOpen(false);
+          setFiltersOpen(false);
+        }}
+      />
 
-        {/* Desktop Navigation */}
-        <div className="hidden md:flex items-center space-x-6 flex-1 justify-center">
-          <div className="relative" ref={dropdownRef}>
+      {/* Barra principal */}
+      <div className="max-w-7xl mx-auto px-4">
+        <div className="flex items-center justify-between h-16">
+          {/* Logo y botón de menú móvil */}
+          <div className="flex items-center">
             <button
-              className="flex items-center text-gray-600 hover:text-green-500 transition-colors duration-300"
-              onClick={toggleCategories}
+              className="md:hidden mr-4 text-gray-600 hover:text-green-500 transition-colors"
+              onClick={toggleMobileMenu}
+              aria-label="Menú"
             >
-              Categorías <ChevronDown size={16} className="ml-1" />
+              {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
 
-            {/* Main dropdown with animation */}
-            <div
-              className={`absolute top-full left-0 mt-1 bg-white shadow-md rounded-md py-2 w-48 z-50 transition-all duration-300 origin-top ${
-                categoriesOpen
-                  ? "opacity-100 transform scale-y-100"
-                  : "opacity-0 transform scale-y-0 pointer-events-none"
-              }`}
+            <Link
+              href="/"
+              className="h-10 w-32 flex-shrink-0 flex items-center"
             >
-              {categories.map((category, index) => (
-                <div
-                  key={index}
-                  className="relative"
-                  onMouseEnter={() => setSelectedCategory(index)}
-                  onMouseLeave={() => setSelectedCategory(null)}
-                >
-                  <button
-                    className="flex w-full items-center justify-between px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-green-500 transition-colors duration-300"
-                    onClick={toggleMobileCategories}
-                  >
-                    {category.name}
-                    <ChevronRight size={14} className="ml-1" />
-                  </button>
-
-                  {/* Subcategory dropdown with animation */}
-                  <div
-                    className={`absolute top-0 left-full ml-1 bg-white shadow-md rounded-md py-2 w-64 z-50 transition-all duration-300 origin-left ${
-                      selectedCategory === index
-                        ? "opacity-100 transform scale-x-100"
-                        : "opacity-0 transform scale-x-0 pointer-events-none"
-                    }`}
-                  >
-                    {category.subcategories.map((subcategory, subIndex) => (
-                      <div key={subIndex} className="px-4 py-2">
-                        <div className="font-medium text-gray-800 border-b border-gray-200 pb-1 mb-2">
-                          {subcategory.name}
-                        </div>
-                        <ul className="pl-2">
-                          {subcategory.items.map((item, itemIndex) => (
-                            <li key={itemIndex}>
-                              <a
-                                href="#"
-                                className="block py-1 text-gray-600 hover:text-green-500 transition-colors duration-300"
-                              >
-                                {item}
-                              </a>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
+              <img
+                src="/images/ojo-verde.png"
+                alt="NoLoVes Logo"
+                className="h-full w-auto object-contain"
+              />
+              <span className="ml-2 font-bold text-xl text-green-600">
+                NoLoVes
+              </span>
+            </Link>
           </div>
 
-          <Link
-            href="/productos"
-            className="text-gray-600 hover:text-green-500 transition-colors duration-300"
-          >
-            Productos
-          </Link>
+          {/* Barra de búsqueda central (escritorio) con autocompletado */}
+          <div className="hidden md:flex items-center justify-center flex-1 mx-4">
+            <SearchAutocomplete
+              onSearch={handleSearch}
+              className="w-full max-w-xl"
+            />
+          </div>
 
-          <Link
-            href="/nosotros"
-            className="text-gray-600 hover:text-green-500 transition-colors duration-300"
-          >
-            Nosotros
-          </Link>
+          {/* Navegación y botones de acción (escritorio) */}
+          <div className="hidden md:flex items-center space-x-4">
+            <button
+              className="flex items-center text-gray-600 hover:text-white hover:bg-gradient-to-r hover:from-green-500 hover:to-green-600 transition-all duration-200 px-4 py-2 rounded-md group font-medium"
+              onClick={toggleCategories}
+            >
+              <LayoutGrid
+                size={18}
+                className="mr-2 transition-transform duration-300 group-hover:rotate-90"
+              />
+              <span>Categorías</span>
+              <span
+                className={`ml-1 w-2 h-2 rounded-full bg-green-500 transition-transform duration-300 ${categoriesOpen ? "scale-150 bg-white" : "scale-100"}`}
+              ></span>
+            </button>
 
-          <Link
-            href="/contacto"
-            className="text-gray-600 hover:text-green-500 transition-colors duration-300"
-          >
-            Contacto
-          </Link>
+            <Link
+              href="/dashboard"
+              className="text-gray-600 hover:text-white hover:bg-gradient-to-r hover:from-green-500 hover:to-green-600 transition-all duration-200 px-3 py-2 rounded-md font-medium"
+            >
+              Admin
+            </Link>
 
-          <Link
-            href="/dashboard"
-            className="text-gray-600 hover:text-green-500 transition-colors duration-300"
-          >
-            Admin
-          </Link>
+            <div className="relative">
+              <button
+                className="flex items-center text-gray-600 hover:text-green-500 transition-colors p-2 rounded-full hover:bg-green-50"
+                onClick={toggleUserMenu}
+                aria-label="Usuario"
+              >
+                <User size={20} />
+              </button>
+
+              {/* Menú de usuario */}
+              <div
+                className={`absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 transform origin-top-right transition-all duration-200 ${
+                  userMenuOpen
+                    ? "opacity-100 scale-100"
+                    : "opacity-0 scale-95 pointer-events-none"
+                }`}
+              >
+                <Link
+                  href="/perfil"
+                  className="block px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-green-500"
+                >
+                  Mi Perfil
+                </Link>
+                <Link
+                  href="/pedidos"
+                  className="block px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-green-500"
+                >
+                  Mis Pedidos
+                </Link>
+                <hr className="my-1" />
+                <Link
+                  href="/auth/logout"
+                  className="block px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-green-500"
+                >
+                  Cerrar Sesión
+                </Link>
+              </div>
+            </div>
+
+            <Link
+              href="/carrito"
+              className="flex items-center text-gray-600 hover:text-green-500 transition-colors p-2 rounded-full hover:bg-green-50 relative"
+              aria-label="Carrito"
+            >
+              <div className="relative">
+                <ShoppingCart size={20} />
+                <span className="absolute -top-1 -right-1 bg-gradient-to-r from-green-500 to-green-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center shadow-sm">
+                  0
+                </span>
+              </div>
+            </Link>
+          </div>
+
+          {/* Botones móviles */}
+          <div className="flex md:hidden items-center space-x-2">
+            <button
+              className="text-gray-600 hover:text-green-500 transition-colors p-2"
+              onClick={toggleSearch}
+              aria-label="Buscar"
+            >
+              <Search size={20} />
+            </button>
+            <Link
+              href="/carrito"
+              className="text-gray-600 hover:text-green-500 transition-colors p-2 relative"
+              aria-label="Carrito"
+            >
+              <ShoppingCart size={20} />
+              <span className="absolute -top-1 -right-1 bg-gradient-to-r from-green-500 to-green-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center shadow-sm">
+                0
+              </span>
+            </Link>
+          </div>
         </div>
 
-        {/* Mobile Navigation */}
-        <div className="md:hidden flex items-center justify-between w-full px-4">
-          <button
-            className="text-gray-600 hover:text-green-500 transition-colors duration-300"
-            onClick={toggleMobileMenu}
-          >
-            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
-        </div>
-
-        {/* Mobile Menu Drawer */}
+        {/* Barra de búsqueda móvil con autocompletado */}
         <div
-          className={`fixed inset-y-0 left-0 w-full bg-white shadow-lg z-50 transform transition-transform duration-300 ease-in-out ${
-            mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+          className={`transition-all duration-300 overflow-hidden ${
+            searchOpen ? "h-14 pb-4" : "h-0"
           }`}
         >
-          <div className="flex justify-between items-center p-4 border-b">
-            <h2 className="text-lg font-semibold">Menú</h2>
+          <SearchAutocomplete onSearch={handleSearch} className="w-full" />
+        </div>
+      </div>
+
+      {/* Menú de categorías desplegable (escritorio) */}
+      <div
+        ref={categoriesRef}
+        className={`absolute left-0 w-full bg-white shadow-xl z-50 transition-all duration-300 ${
+          categoriesOpen
+            ? "opacity-100 translate-y-0"
+            : "opacity-0 -translate-y-4 pointer-events-none"
+        }`}
+        style={{
+          maxHeight: categoriesOpen ? "80vh" : "0",
+          overflowY: categoriesOpen ? "auto" : "hidden",
+        }}
+      >
+        <div className="max-w-7xl mx-auto px-4 py-6">
+          <div className="grid grid-cols-5 gap-6">
+            {/* Lista de categorías principales con animación y colores */}
+            <div className="col-span-1 border-r pr-4">
+              <h3 className="font-medium text-lg mb-4 text-gray-800 flex items-center">
+                <Eye size={20} className="mr-2 text-green-500" />
+                Categorías
+              </h3>
+              <div className="space-y-1 max-h-[60vh] overflow-y-auto pr-2 categories-scrollbar">
+                {CATEGORIES.map((category, index) => (
+                  <div key={category.id} className="mb-2">
+                    <button
+                      className={`text-left w-full py-2 px-3 rounded-md transition-all duration-200 relative overflow-hidden group ${
+                        selectedCategory === category.id
+                          ? "text-white font-medium"
+                          : "text-gray-700 hover:text-white"
+                      }`}
+                      onMouseEnter={() => setSelectedCategory(category.id)}
+                      onClick={() => {
+                        // Cerrar el menú y navegar a la categoría
+                        setCategoriesOpen(false);
+                        window.location.href = getCategoryUrl(category.id);
+                      }}
+                    >
+                      <span className="relative z-10 flex items-center">
+                        {getCategoryIcon(index)}
+                        <span className="ml-2">{category.name}</span>
+                      </span>
+                      <span
+                        className={`absolute inset-0 bg-gradient-to-r ${getCategoryColor(index)} transform transition-transform duration-300 
+                          ${selectedCategory === category.id ? "translate-x-0" : "-translate-x-full"} 
+                          group-hover:translate-x-0`}
+                      ></span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Subcategorías de la categoría seleccionada con animaciones */}
+            <div className="col-span-4 pl-4">
+              {selectedCategory ? (
+                <>
+                  <h3 className="font-medium text-xl mb-4 text-gray-800 border-b pb-2">
+                    {
+                      CATEGORIES.find((cat) => cat.id === selectedCategory)
+                        ?.name
+                    }
+                  </h3>
+                  <div className="grid grid-cols-3 gap-y-3 gap-x-6">
+                    {CATEGORIES.find(
+                      (cat) => cat.id === selectedCategory,
+                    )?.subcategories.map((subcat, idx) => (
+                      <Link
+                        key={subcat.id}
+                        href={getSubcategoryUrl(selectedCategory, subcat.id)}
+                        className="group"
+                        onClick={() => setCategoriesOpen(false)}
+                      >
+                        <div className="block p-3 rounded-md text-gray-700 hover:bg-gray-50 hover:text-green-500 transition-all duration-200 transform hover:-translate-y-1 hover:shadow-md">
+                          <div className="flex items-center">
+                            <span className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center mr-3 text-green-600 group-hover:bg-green-500 group-hover:text-white transition-colors duration-200">
+                              {idx + 1}
+                            </span>
+                            <span className="font-medium">{subcat.name}</span>
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full py-8 text-gray-500 bg-gray-50 rounded-lg">
+                  <Eye size={48} className="text-green-400 mb-3" />
+                  <p className="text-lg mb-1">Explora nuestras categorías</p>
+                  <p className="text-sm text-gray-400">
+                    Selecciona una categoría para ver sus subcategorías
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Menú móvil */}
+      <div
+        className={`fixed inset-0 z-50 transform transition-transform duration-300 ease-in-out ${
+          mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="relative h-full w-4/5 max-w-sm bg-gradient-to-b from-white to-green-50 shadow-xl overflow-y-auto">
+          <div className="p-4 border-b flex items-center justify-between">
+            <div className="flex items-center">
+              <img
+                src="/images/ojo-verde.png"
+                alt="NoLoVes Logo"
+                className="h-10 w-auto"
+              />
+              <span className="ml-2 font-bold text-xl text-green-600">
+                NoLoVes
+              </span>
+            </div>
             <button
-              className="text-gray-600 hover:text-green-500 transition-colors duration-300"
+              className="text-gray-600 hover:text-red-500 transition-colors"
               onClick={toggleMobileMenu}
+              aria-label="Cerrar menú"
             >
               <X size={24} />
             </button>
           </div>
 
           <div className="p-4">
-            <div>
-              <button
-                className="flex w-full items-center justify-between py-3 text-gray-700 border-b"
-                onClick={toggleMobileCategories}
-              >
-                <span>Categorías</span>
-                {mobileCategoriesOpen ? (
-                  <ChevronDown size={16} />
-                ) : (
-                  <ChevronRight size={16} />
-                )}
-              </button>
-
-              {/* Mobile Categories Submenu */}
-              <div
-                className={`transition-all duration-300 overflow-hidden ${
-                  mobileCategoriesOpen
-                    ? "max-h-screen opacity-100"
-                    : "max-h-0 opacity-0"
-                }`}
-              >
-                {categories.map((category, index) => (
-                  <div key={index}>
-                    <button
-                      className="flex w-full items-center justify-between py-2 pl-4 text-gray-700"
-                      onClick={(e) => handleMobileCategoryClick(index, e)}
-                    >
-                      <span>{category.name}</span>
-                      {mobileSelectedCategory === index ? (
-                        <ChevronDown size={14} />
-                      ) : (
-                        <ChevronRight size={14} />
-                      )}
-                    </button>
-
-                    {/* Mobile Subcategories - Overlays the categories list */}
-                    <div
-                      className={`transition-all duration-300 pl-8 overflow-hidden ${
-                        mobileSelectedCategory === index
-                          ? "max-h-screen opacity-100"
-                          : "max-h-0 opacity-0"
-                      }`}
-                    >
-                      {category.subcategories.map((subcategory, subIndex) => (
-                        <div key={subIndex} className="py-2">
-                          <div className="font-medium text-gray-800 mb-1">
-                            {subcategory.name}
-                          </div>
-                          <ul>
-                            {subcategory.items.map((item, itemIndex) => (
-                              <li key={itemIndex}>
-                                <a
-                                  href="#"
-                                  className="block py-1 text-gray-600"
-                                >
-                                  {item}
-                                </a>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <a href="#" className="block py-3 text-gray-700 border-b">
-              Productos destacados
-            </a>
-            <a href="#" className="block py-3 text-gray-700 border-b">
-              Sobre Nosotros
-            </a>
-            <a href="#" className="block py-3 text-gray-700 border-b">
-              Contacto
-            </a>
-          </div>
-        </div>
-
-        <div className="flex space-x-4">
-          <div>
             <button
-              className="text-gray-600 hover:text-green-500 transition-colors duration-300"
-              onClick={() => setSearchOpen(!searchOpen)}
+              className="flex items-center justify-between w-full py-3 px-4 text-gray-700 hover:bg-gradient-to-r hover:from-green-500 hover:to-green-600 hover:text-white rounded-md transition-all duration-200 group font-medium"
+              onClick={() => setMobileCategoriesOpen(!mobileCategoriesOpen)}
             >
-              <Search size={20} />
+              <span className="flex items-center">
+                <LayoutGrid
+                  size={18}
+                  className="mr-2 text-green-500 group-hover:text-white transition-transform duration-300 group-hover:rotate-90"
+                />
+                Categorías
+              </span>
+              <span
+                className={`w-2 h-2 rounded-full ${mobileCategoriesOpen ? "bg-white scale-150" : "bg-green-500 scale-100"} transition-all duration-300`}
+              ></span>
             </button>
-            {searchOpen && (
-              <div className="absolute right-0 top-full mt-1 bg-white shadow-md rounded-md p-2 w-64">
-                <div className="flex">
-                  <input
-                    type="text"
-                    placeholder="Buscar productos"
-                    className="flex-1 p-2 border border-gray-200 rounded-l-md focus:outline-none focus:border-green-500 transition-colors duration-300"
-                  />
-                  <button className="bg-green-500 text-white p-2 rounded-r-md hover:bg-green-600 transition-colors duration-300">
-                    <Search size={16} />
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-          <a
-            href="#"
-            className="text-gray-600 hover:text-green-500 transition-colors duration-300"
-          >
-            <ShoppingCart size={20} />
-          </a>
-          <div className="relative" ref={dropdownRef}>
-            <button
-              className="text-gray-600 hover:text-green-500 transition-colors duration-300"
-              onClick={toggleUserMenu}
-            >
-              <User size={20} />
-            </button>
+
             <div
-              className={`absolute right-0 top-full mt-2 bg-white shadow-md rounded-md w-40 overflow-hidden transition-all duration-300 origin-top ${
-                userMenuOpen
-                  ? "opacity-100 transform scale-y-100"
-                  : "opacity-0 transform scale-y-0 pointer-events-none"
+              className={`mt-2 ml-4 transition-all duration-300 ease-in-out overflow-hidden ${
+                mobileCategoriesOpen
+                  ? "max-h-[1000px] opacity-100"
+                  : "max-h-0 opacity-0"
               }`}
             >
-              <a
-                href="#"
-                className="block px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-green-500 transition-colors duration-300"
+              {CATEGORIES.map((category, index) => (
+                <div key={category.id} className="mb-2">
+                  <button
+                    className="flex items-center justify-between w-full py-2 px-3 text-gray-700 hover:bg-gradient-to-r hover:from-green-50 hover:to-green-100 rounded-md group"
+                    onClick={() =>
+                      setMobileSelectedCategory(
+                        mobileSelectedCategory === category.id
+                          ? null
+                          : category.id,
+                      )
+                    }
+                  >
+                    <span className="flex items-center">
+                      {getCategoryIcon(index)}
+                      <span className="ml-2">{category.name}</span>
+                    </span>
+                    {mobileSelectedCategory === category.id ? (
+                      <ChevronDown
+                        size={16}
+                        className="transform transition-transform duration-300 group-hover:rotate-180"
+                      />
+                    ) : (
+                      <ChevronRight
+                        size={16}
+                        className="transform transition-transform duration-300 group-hover:rotate-90"
+                      />
+                    )}
+                  </button>
+
+                  <div
+                    className={`mt-1 ml-4 space-y-1 transition-all duration-300 overflow-hidden ${
+                      mobileSelectedCategory === category.id
+                        ? "max-h-[500px] opacity-100"
+                        : "max-h-0 opacity-0"
+                    }`}
+                  >
+                    {category.subcategories.map((subcategory, subIdx) => (
+                      <Link
+                        key={subcategory.id}
+                        href={getSubcategoryUrl(category.id, subcategory.id)}
+                        className="block py-2 px-3 text-gray-600 hover:text-green-500 hover:bg-green-50 rounded-md"
+                        onClick={toggleMobileMenu}
+                      >
+                        <div className="flex items-center">
+                          <span className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center mr-2 text-green-600 text-xs">
+                            {subIdx + 1}
+                          </span>
+                          {subcategory.name}
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <hr className="my-4" />
+
+            <Link
+              href="/productos"
+              className="flex items-center w-full py-3 px-4 text-gray-700 hover:bg-gradient-to-r hover:from-green-500 hover:to-green-600 hover:text-white rounded-md transition-all duration-200 font-medium"
+              onClick={toggleMobileMenu}
+            >
+              <Eye size={16} className="mr-2" />
+              Todos los productos
+            </Link>
+
+            <Link
+              href="/dashboard"
+              className="flex items-center w-full py-3 px-4 text-gray-700 hover:bg-gradient-to-r hover:from-green-500 hover:to-green-600 hover:text-white rounded-md transition-all duration-200 font-medium mt-2"
+              onClick={toggleMobileMenu}
+            >
+              <User size={16} className="mr-2" />
+              Admin
+            </Link>
+
+            <hr className="my-4" />
+
+            <div className="space-y-2">
+              <Link
+                href="/perfil"
+                className="flex items-center w-full py-3 px-4 text-gray-700 hover:bg-gray-50 rounded-md"
+                onClick={toggleMobileMenu}
               >
-                Iniciar Sesión
-              </a>
-              <a
-                href="#"
-                className="block px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-green-500 transition-colors duration-300"
+                <User size={16} className="mr-2 text-green-500" />
+                Mi Perfil
+              </Link>
+              <Link
+                href="/pedidos"
+                className="flex items-center w-full py-3 px-4 text-gray-700 hover:bg-gray-50 rounded-md"
+                onClick={toggleMobileMenu}
               >
-                Registrarse
-              </a>
-              <a
-                href="#"
-                className="block px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-green-500 transition-colors duration-300"
+                <Clock size={16} className="mr-2 text-green-500" />
+                Mis Pedidos
+              </Link>
+              <Link
+                href="/auth/logout"
+                className="flex items-center w-full py-3 px-4 text-gray-700 hover:bg-gray-50 rounded-md"
+                onClick={toggleMobileMenu}
               >
-                Mi Cuenta
-              </a>
+                <X size={16} className="mr-2 text-red-500" />
+                Cerrar Sesión
+              </Link>
             </div>
           </div>
         </div>
       </div>
-      {mobileMenuOpen && (
-        <div className="md:hidden bg-white shadow-md pt-2 pb-4 px-4">
-          <div className="flex flex-col space-y-3">
-            <div className="py-2 border-b border-gray-200">
-              <div className="flex">
-                <input
-                  type="text"
-                  placeholder="Buscar productos invisibles..."
-                  className="flex-1 p-2 border border-gray-200 rounded-l-md focus:outline-none focus:border-green-500"
-                />
-                <button className="bg-green-500 text-white p-2 rounded-r-md hover:bg-green-600 transition-colors">
-                  <Search size={16} />
-                </button>
-              </div>
-            </div>
 
-            <button
-              className="flex items-center justify-between w-full py-2 text-gray-600"
-              onClick={() => setCategoriesOpen(!categoriesOpen)}
-            >
-              <span>Categorías</span>
-              <ChevronDown
-                size={16}
-                className={`transition-transform ${categoriesOpen ? "rotate-180" : ""}`}
-              />
-            </button>
-
-            {categoriesOpen && (
-              <div className="pl-4 border-l-2 border-gray-200 space-y-2">
-                {categories.map((category, index) => (
-                  <div key={index} className="py-1">
-                    <button
-                      className="flex items-center justify-between w-full text-gray-700 hover:text-green-500"
-                      onClick={(e) => handleMobileCategoryClick(index, e)}
-                    >
-                      <span>{category.name}</span>
-                      <ChevronDown
-                        size={14}
-                        className={`transition-transform ${
-                          mobileSelectedCategory === index ? "rotate-180" : ""
-                        }`}
-                      />
-                    </button>
-                    {/* Resto del código existente para las subcategorías */}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <Link
-              href="/productos"
-              className="py-2 text-gray-600 border-b border-gray-200"
-            >
-              Productos
-            </Link>
-            <Link
-              href="/nosotros"
-              className="py-2 text-gray-600 border-b border-gray-200"
-            >
-              Nosotros
-            </Link>
-            <Link
-              href="/contacto"
-              className="py-2 text-gray-600 border-b border-gray-200"
-            >
-              Contacto
-            </Link>
-            <Link
-              href="/dashboard"
-              className="py-2 text-gray-600 border-b border-gray-200"
-            >
-              Admin
-            </Link>
-          </div>
-        </div>
-      )}
+      {/* Estilos CSS personalizados */}
+      <style jsx>{`
+        .categories-scrollbar::-webkit-scrollbar {
+          width: 4px;
+        }
+        .categories-scrollbar::-webkit-scrollbar-track {
+          background: #f1f1f1;
+          border-radius: 10px;
+        }
+        .categories-scrollbar::-webkit-scrollbar-thumb {
+          background: #888;
+          border-radius: 10px;
+        }
+        .categories-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #555;
+        }
+      `}</style>
     </nav>
   );
 };

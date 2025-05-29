@@ -85,7 +85,7 @@ const HeaderCarousel = () => {
   };
 
   return (
-    <header className="relative mt-16 w-full h-[200px] md:h-[500px] overflow-hidden bg-gray-900 group">
+    <header className="relative w-full h-[200px] md:h-[500px] overflow-hidden bg-gray-900 group">
       <div
         className="absolute w-full h-full transition-transform duration-500 ease-in-out"
         style={{ transform: `translateX(-${currentIndex * 100}%)` }}
