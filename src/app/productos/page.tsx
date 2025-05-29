@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { CATEGORIES } from "@/constants/categories";
 import SearchAutocomplete from "@/components/SearchAutocomplete";
+import { useCart } from "@/context/CartContext";
 
 interface Product {
   _id: string;
@@ -37,6 +38,7 @@ interface Product {
 export default function ProductsPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const cart = useCart();
   const queryParam = searchParams.get("q");
 
   const [products, setProducts] = useState<Product[]>([]);
@@ -56,6 +58,8 @@ export default function ProductsPage() {
     stock: true,
     sort: true,
   });
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const [isAddingToCart, setIsAddingToCart] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -218,6 +222,34 @@ export default function ProductsPage() {
     }));
   };
 
+  // Manejar añadir al carrito
+  const handleAddToCart = (e: React.MouseEvent, product: Product) => {
+    e.stopPropagation();
+
+    if (product.stock <= 0) return;
+
+    setIsAddingToCart(product._id);
+
+    // Añadir al carrito
+    cart.addToCart(product, 1);
+
+    // Mostrar mensaje de éxito durante 1.5 segundos
+    setTimeout(() => {
+      setIsAddingToCart(null);
+    }, 1500);
+  };
+
+  // Verificar si el producto ya está en el carrito
+  const isInCart = (productId: string) => {
+    return cart.items.some((item) => item.product._id === productId);
+  };
+
+  // Ir al carrito
+  const goToCart = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    router.push("/cart");
+  };
+
   return (
     <div className="container mx-auto px-4 py-8 pt-24">
       <div className="bg-gradient-to-r from-green-600 to-emerald-800 text-white p-8 rounded-lg mb-8 shadow-lg">
@@ -254,7 +286,10 @@ export default function ProductsPage() {
                 >
                   <span>{category?.name || catId}</span>
                   <button
-                    onClick={() => handleCategoryToggle(catId)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleCategoryToggle(catId);
+                    }}
                     className="text-white hover:text-gray-200 ml-1"
                   >
                     <X size={14} />
@@ -268,7 +303,10 @@ export default function ProductsPage() {
                 <Search size={14} className="mr-1" />
                 <span>{searchTerm}</span>
                 <button
-                  onClick={() => handleSearch("")}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleSearch("");
+                  }}
                   className="text-white hover:text-gray-200 ml-1"
                 >
                   <X size={14} />
@@ -281,7 +319,10 @@ export default function ProductsPage() {
                 <Check size={14} className="mr-1" />
                 <span>En stock</span>
                 <button
-                  onClick={() => setInStockOnly(false)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setInStockOnly(false);
+                  }}
                   className="text-white hover:text-gray-200 ml-1"
                 >
                   <X size={14} />
@@ -296,7 +337,10 @@ export default function ProductsPage() {
                   ${formatPrice(priceRange[0])} - ${formatPrice(priceRange[1])}
                 </span>
                 <button
-                  onClick={() => setPriceRange([0, 1000000])}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setPriceRange([0, 1000000]);
+                  }}
                   className="text-white hover:text-gray-200 ml-1"
                 >
                   <X size={14} />
@@ -421,7 +465,10 @@ export default function ProductsPage() {
                       type="checkbox"
                       id={`category-${category.id}`}
                       checked={selectedCategories.includes(category.id)}
-                      onChange={() => handleCategoryToggle(category.id)}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        handleCategoryToggle(category.id);
+                      }}
                       className="h-4 w-4 text-green-600 focus:ring-green-500 rounded"
                     />
                     <label
@@ -460,12 +507,13 @@ export default function ProductsPage() {
                   <input
                     type="number"
                     value={priceRange[0]}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      e.stopPropagation();
                       setPriceRange([
                         parseInt(e.target.value) || 0,
                         priceRange[1],
-                      ])
-                    }
+                      ]);
+                    }}
                     className="w-full border border-gray-300 rounded-md px-2 py-1 focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     min="0"
                   />
@@ -473,12 +521,13 @@ export default function ProductsPage() {
                   <input
                     type="number"
                     value={priceRange[1]}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      e.stopPropagation();
                       setPriceRange([
                         priceRange[0],
                         parseInt(e.target.value) || 0,
-                      ])
-                    }
+                      ]);
+                    }}
                     className="w-full border border-gray-300 rounded-md px-2 py-1 focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     min="0"
                   />
@@ -491,9 +540,10 @@ export default function ProductsPage() {
                     max="1000000"
                     step="10000"
                     value={priceRange[0]}
-                    onChange={(e) =>
-                      setPriceRange([parseInt(e.target.value), priceRange[1]])
-                    }
+                    onChange={(e) => {
+                      e.stopPropagation();
+                      setPriceRange([parseInt(e.target.value), priceRange[1]]);
+                    }}
                     className="w-full accent-green-500"
                   />
                   <input
@@ -502,9 +552,10 @@ export default function ProductsPage() {
                     max="1000000"
                     step="10000"
                     value={priceRange[1]}
-                    onChange={(e) =>
-                      setPriceRange([priceRange[0], parseInt(e.target.value)])
-                    }
+                    onChange={(e) => {
+                      e.stopPropagation();
+                      setPriceRange([priceRange[0], parseInt(e.target.value)]);
+                    }}
                     className="w-full accent-green-500"
                   />
                 </div>
@@ -535,7 +586,10 @@ export default function ProductsPage() {
                     type="checkbox"
                     id="stock-filter"
                     checked={inStockOnly}
-                    onChange={() => setInStockOnly(!inStockOnly)}
+                    onChange={(e) => {
+                      e.stopPropagation();
+                      setInStockOnly(!inStockOnly);
+                    }}
                     className="h-4 w-4 text-green-600 focus:ring-green-500 rounded"
                   />
                   <label htmlFor="stock-filter" className="ml-2 text-gray-700">
@@ -569,7 +623,10 @@ export default function ProductsPage() {
               >
                 <select
                   value={sortOption}
-                  onChange={(e) => setSortOption(e.target.value)}
+                  onChange={(e) => {
+                    e.stopPropagation();
+                    setSortOption(e.target.value);
+                  }}
                   className="w-full border border-gray-300 rounded-md px-2 py-1 focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 >
                   <option value="price-asc">Precio: menor a mayor</option>
@@ -731,21 +788,42 @@ export default function ProductsPage() {
                               {formatPrice(product.price)}
                             </span>
                           </div>
-                          <button
-                            className={`p-3 rounded-full shadow-sm transition-all duration-300 ${
-                              product.stock > 0
-                                ? "bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white hover:shadow-md hover:scale-110"
-                                : "bg-gray-200 text-gray-400 cursor-not-allowed"
-                            }`}
-                            disabled={product.stock <= 0}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              // Agregar al carrito
-                              alert("Producto agregado al carrito");
-                            }}
-                          >
-                            <ShoppingCart size={18} />
-                          </button>
+
+                          {isInCart(product._id) ? (
+                            <button
+                              className="p-3 rounded-full shadow-sm transition-all duration-300 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white hover:shadow-md hover:scale-110"
+                              onClick={(e) => goToCart(e)}
+                            >
+                              <ShoppingCart size={18} />
+                            </button>
+                          ) : (
+                            <button
+                              className={`p-3 rounded-full shadow-sm transition-all duration-300 ${
+                                product.stock > 0
+                                  ? "bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white hover:shadow-md hover:scale-110"
+                                  : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                              } relative overflow-hidden`}
+                              disabled={product.stock <= 0}
+                              onClick={(e) => handleAddToCart(e, product)}
+                            >
+                              {isAddingToCart === product._id ? (
+                                <Check size={18} />
+                              ) : (
+                                <ShoppingCart size={18} />
+                              )}
+
+                              {/* Animación al añadir al carrito */}
+                              <span
+                                className={`absolute inset-0 flex items-center justify-center bg-green-600 text-white transition-transform duration-300 ${
+                                  isAddingToCart === product._id
+                                    ? "translate-y-0"
+                                    : "translate-y-full"
+                                }`}
+                              >
+                                <Check size={18} />
+                              </span>
+                            </button>
+                          )}
                         </div>
 
                         {product.stock > 0 && (
@@ -796,15 +874,17 @@ export default function ProductsPage() {
                         <div>
                           <div className="flex flex-wrap gap-1 mb-3">
                             {product.categories
-                              .slice(0, 3)
+                              .slice(0, 5)
                               .map((catId, idx) => {
                                 const category = CATEGORIES.find(
                                   (c) => c.id === catId,
                                 );
                                 return (
                                   <span
-                                    key={`${product._id}-cat-${idx}`}
-                                    className={`bg-gradient-to-r ${getCategoryColor(idx)} text-white text-xs px-2 py-1 rounded-full shadow-sm flex items-center`}
+                                    key={`${product._id}-list-cat-${idx}`}
+                                    className={`bg-gradient-to-r ${getCategoryColor(
+                                      idx,
+                                    )} text-white text-xs px-2 py-1 rounded-full flex items-center`}
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       router.push(
@@ -819,9 +899,9 @@ export default function ProductsPage() {
                                   </span>
                                 );
                               })}
-                            {product.categories.length > 3 && (
-                              <span className="text-white text-xs bg-gray-700 px-2 py-1 rounded-full">
-                                +{product.categories.length - 3}
+                            {product.categories.length > 5 && (
+                              <span className="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded-full">
+                                +{product.categories.length - 5}
                               </span>
                             )}
                           </div>
@@ -829,52 +909,68 @@ export default function ProductsPage() {
                           <h3 className="text-xl font-medium text-gray-800 mb-2 group-hover:text-green-600 transition-colors duration-300">
                             {product.title}
                           </h3>
-                          <p className="text-gray-600 md:pr-6">
+                          <p className="text-gray-600 text-sm mb-4 line-clamp-2">
                             {product.description}
                           </p>
                         </div>
 
-                        <div className="flex items-center justify-between mt-4">
-                          <div className="flex flex-col">
-                            <span className="text-xs text-gray-500">
-                              Precio
-                            </span>
-                            <span className="text-xl font-bold text-green-600">
+                        <div className="flex flex-wrap justify-between items-center">
+                          <div className="flex items-baseline">
+                            <span className="text-2xl font-bold text-green-600 mr-2">
                               ${formatPrice(product.price)}
                             </span>
-
-                            {product.stock > 0 && (
-                              <div className="mt-1 flex items-center">
-                                <div className="bg-green-100 h-2 w-24 rounded-full">
-                                  <div
-                                    className="bg-gradient-to-r from-green-500 to-green-600 h-full rounded-full"
-                                    style={{
-                                      width: `${Math.min(100, (product.stock / 10) * 100)}%`,
-                                    }}
-                                  ></div>
-                                </div>
-                                <span className="text-xs text-gray-500 ml-2">
-                                  {product.stock} en stock
-                                </span>
-                              </div>
+                            {product.stock > 0 ? (
+                              <span className="text-sm text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                                En stock ({product.stock})
+                              </span>
+                            ) : (
+                              <span className="text-sm text-red-600 bg-red-50 px-2 py-1 rounded-full">
+                                Agotado
+                              </span>
                             )}
                           </div>
 
-                          <button
-                            className={`p-3 rounded-full shadow-sm transition-all duration-300 ${
-                              product.stock > 0
-                                ? "bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white hover:shadow-md hover:scale-110"
-                                : "bg-gray-200 text-gray-400 cursor-not-allowed"
-                            }`}
-                            disabled={product.stock <= 0}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              // Agregar al carrito
-                              alert("Producto agregado al carrito");
-                            }}
-                          >
-                            <ShoppingCart size={18} />
-                          </button>
+                          {isInCart(product._id) ? (
+                            <button
+                              className="mt-2 sm:mt-0 px-4 py-2 rounded-md shadow-sm transition-all duration-300 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white hover:shadow-md flex items-center"
+                              onClick={(e) => goToCart(e)}
+                            >
+                              <ShoppingCart size={18} className="mr-2" />
+                              <span>Ver carrito</span>
+                            </button>
+                          ) : (
+                            <button
+                              className={`mt-2 sm:mt-0 px-4 py-2 rounded-md shadow-sm transition-all duration-300 ${
+                                product.stock > 0
+                                  ? "bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white hover:shadow-md"
+                                  : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                              } flex items-center relative overflow-hidden`}
+                              disabled={product.stock <= 0}
+                              onClick={(e) => handleAddToCart(e, product)}
+                            >
+                              <div
+                                className={`flex items-center transition-opacity duration-300 ${
+                                  isAddingToCart === product._id
+                                    ? "opacity-0"
+                                    : "opacity-100"
+                                }`}
+                              >
+                                <ShoppingCart size={18} className="mr-2" />
+                                <span>Añadir al carrito</span>
+                              </div>
+
+                              <div
+                                className={`absolute inset-0 flex items-center justify-center transition-transform duration-300 ${
+                                  isAddingToCart === product._id
+                                    ? "translate-y-0"
+                                    : "translate-y-full"
+                                }`}
+                              >
+                                <Check size={18} className="mr-2" />
+                                <span>¡Añadido!</span>
+                              </div>
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>

@@ -12,8 +12,12 @@ import {
   Clock,
   Check,
   AlertTriangle,
+  ShoppingBag,
+  Plus,
+  Minus,
 } from "lucide-react";
 import { CATEGORIES } from "@/constants/categories";
+import { useCart } from "@/context/CartContext";
 
 interface Product {
   _id: string;
@@ -31,11 +35,15 @@ export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
   const productId = params.id as string;
+  const cart = useCart();
 
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
+  const [quantity, setQuantity] = useState(1);
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [showAddedMessage, setShowAddedMessage] = useState(false);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -118,6 +126,46 @@ export default function ProductDetailPage() {
       "from-teal-500 to-teal-800",
     ];
     return colors[index % colors.length];
+  };
+
+  // Manejar cambio de cantidad
+  const handleQuantityChange = (value: number) => {
+    if (product) {
+      // Asegurarse de que la cantidad esté entre 1 y el stock disponible
+      const newQuantity = Math.max(1, Math.min(value, product.stock));
+      setQuantity(newQuantity);
+    }
+  };
+
+  // Manejar añadir al carrito
+  const handleAddToCart = () => {
+    if (product && product.stock > 0) {
+      setIsAddingToCart(true);
+
+      // Añadir al carrito
+      cart.addToCart(product, quantity);
+
+      // Mostrar mensaje de éxito
+      setShowAddedMessage(true);
+
+      // Ocultar mensaje después de 3 segundos
+      setTimeout(() => {
+        setShowAddedMessage(false);
+        setIsAddingToCart(false);
+      }, 3000);
+    }
+  };
+
+  // Verificar si el producto ya está en el carrito
+  const isInCart = () => {
+    return product
+      ? cart.items.some((item) => item.product._id === product._id)
+      : false;
+  };
+
+  // Ir al carrito
+  const goToCart = () => {
+    router.push("/cart");
   };
 
   if (loading) {
@@ -249,99 +297,155 @@ export default function ProductDetailPage() {
               <h2 className="text-lg font-medium mb-2 text-gray-700">
                 Disponibilidad
               </h2>
-              {product.stock > 0 ? (
-                <div className="flex items-center">
-                  <div className="mr-3">
-                    <div className="bg-green-100 h-2 w-32 rounded-full">
-                      <div
-                        className="bg-gradient-to-r from-green-500 to-green-600 h-full rounded-full"
-                        style={{
-                          width: `${Math.min(100, (product.stock / 10) * 100)}%`,
-                        }}
-                      ></div>
-                    </div>
-                  </div>
-                  <span className="text-green-600 flex items-center">
-                    <Check size={16} className="mr-1" />
-                    {product.stock} en stock
-                  </span>
-                </div>
-              ) : (
-                <div className="text-red-500 flex items-center">
-                  <AlertTriangle size={16} className="mr-1" />
-                  Agotado
-                </div>
-              )}
+              <div className="flex items-center">
+                {product.stock > 0 ? (
+                  <>
+                    <Check size={18} className="text-green-500 mr-2" />
+                    <span className="text-green-600">
+                      {product.stock > 10
+                        ? "En stock"
+                        : `¡Solo quedan ${product.stock} unidades!`}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <AlertTriangle size={18} className="text-red-500 mr-2" />
+                    <span className="text-red-600">Agotado</span>
+                  </>
+                )}
+              </div>
             </div>
 
-            {/* Botón de compra */}
-            <button
-              className={`w-full py-3 px-6 rounded-lg font-medium transition-all duration-200 ${
-                product.stock > 0
-                  ? "bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white transform hover:scale-[1.02] shadow-md hover:shadow-lg"
-                  : "bg-gray-200 text-gray-400 cursor-not-allowed"
-              }`}
-              disabled={product.stock <= 0}
-            >
-              <div className="flex justify-center items-center">
-                <ShoppingCart size={20} className="mr-2" />
-                Agregar al carrito
-              </div>
-            </button>
+            {/* Añadir al carrito */}
+            <div className="mt-8">
+              {product.stock > 0 ? (
+                <div className="space-y-4">
+                  {/* Control de cantidad */}
+                  <div className="flex items-center">
+                    <span className="mr-4 text-gray-700">Cantidad:</span>
+                    <div className="flex items-center border border-gray-300 rounded-md overflow-hidden">
+                      <button
+                        onClick={() => handleQuantityChange(quantity - 1)}
+                        disabled={quantity <= 1}
+                        className="p-2 bg-gray-100 hover:bg-gray-200 transition-colors disabled:opacity-50"
+                      >
+                        <Minus size={16} />
+                      </button>
+                      <span className="px-4 py-1 min-w-[40px] text-center">
+                        {quantity}
+                      </span>
+                      <button
+                        onClick={() => handleQuantityChange(quantity + 1)}
+                        disabled={quantity >= product.stock}
+                        className="p-2 bg-gray-100 hover:bg-gray-200 transition-colors disabled:opacity-50"
+                      >
+                        <Plus size={16} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Botones de acción */}
+                  <div className="flex flex-wrap gap-2">
+                    {isInCart() ? (
+                      <button
+                        onClick={goToCart}
+                        className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white py-3 px-6 rounded-md transition-all duration-300 flex items-center justify-center"
+                      >
+                        <ShoppingCart size={18} className="mr-2" />
+                        <span>Ir al carrito</span>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={handleAddToCart}
+                        disabled={isAddingToCart}
+                        className="flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white py-3 px-6 rounded-md transition-all duration-300 flex items-center justify-center relative overflow-hidden"
+                      >
+                        <div
+                          className={`absolute inset-0 flex items-center justify-center bg-green-600 transition-transform duration-300 ${
+                            showAddedMessage
+                              ? "translate-y-0"
+                              : "translate-y-full"
+                          }`}
+                        >
+                          <Check size={24} className="mr-2" />
+                          <span>¡Añadido!</span>
+                        </div>
+                        <div
+                          className={`flex items-center justify-center transition-opacity duration-300 ${
+                            showAddedMessage ? "opacity-0" : "opacity-100"
+                          }`}
+                        >
+                          <ShoppingBag size={18} className="mr-2" />
+                          <span>Añadir al carrito</span>
+                        </div>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <button
+                  disabled
+                  className="w-full bg-gray-300 text-gray-500 py-3 px-6 rounded-md cursor-not-allowed flex items-center justify-center"
+                >
+                  <AlertTriangle size={18} className="mr-2" />
+                  <span>Producto agotado</span>
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
+      {/* Subcategorías */}
+      {product.subcategories.length > 0 && (
+        <div className="bg-white rounded-lg shadow-md p-6 mb-10">
+          <h2 className="text-xl font-medium text-gray-800 mb-4">
+            Subcategorías
+          </h2>
+          <div className="flex flex-wrap gap-2">
+            {product.subcategories.map((subcategoryId) => (
+              <Link
+                href={`/productos/categoria/${subcategoryId.split("-")[0]}/${subcategoryId.split("-")[1]}`}
+                key={subcategoryId}
+                className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm px-3 py-1 rounded-full transition-colors"
+              >
+                {getSubcategoryName(subcategoryId)}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Productos relacionados */}
       {relatedProducts.length > 0 && (
         <div className="mb-10">
-          <h2 className="text-2xl font-bold mb-6 flex items-center">
-            <Tag size={22} className="mr-2 text-green-500" />
+          <h2 className="text-2xl font-bold text-gray-800 mb-6">
             Productos relacionados
           </h2>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {relatedProducts.map((relatedProduct) => (
               <Link
                 href={`/productos/${relatedProduct._id}`}
                 key={relatedProduct._id}
-                className="bg-white rounded-lg shadow-md overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-2 group"
+                className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
               >
-                <div className="h-48 overflow-hidden relative">
+                <div className="h-48 overflow-hidden">
                   <img
                     src={relatedProduct.imageUrl || "/images/placeholder.jpg"}
                     alt={relatedProduct.title}
-                    className="w-full h-full object-cover transform transition-transform duration-500 group-hover:scale-110"
+                    className="w-full h-full object-cover transition-transform hover:scale-105 duration-300"
                     onError={(e) => {
                       (e.target as HTMLImageElement).src =
                         "/images/placeholder.jpg";
                     }}
                   />
-                  {relatedProduct.stock <= 0 && (
-                    <div className="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full">
-                      Agotado
-                    </div>
-                  )}
                 </div>
-
                 <div className="p-4">
-                  <h3 className="text-lg font-medium text-gray-800 truncate group-hover:text-green-600 transition-colors duration-300">
+                  <h3 className="text-lg font-medium text-gray-800 mb-2 line-clamp-2">
                     {relatedProduct.title}
                   </h3>
-
-                  <div className="flex justify-between items-center mt-3">
-                    <span className="font-bold text-green-600">
-                      ${formatPrice(relatedProduct.price)}
-                    </span>
-                    {relatedProduct.stock > 0 ? (
-                      <span className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">
-                        En stock
-                      </span>
-                    ) : (
-                      <span className="text-xs text-red-600 bg-red-50 px-2 py-1 rounded-full">
-                        Agotado
-                      </span>
-                    )}
+                  <div className="text-green-600 font-bold">
+                    ${formatPrice(relatedProduct.price)}
                   </div>
                 </div>
               </Link>

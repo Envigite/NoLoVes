@@ -21,8 +21,10 @@ import {
 } from "lucide-react";
 import { CATEGORIES } from "@/constants/categories";
 import SearchAutocomplete from "./SearchAutocomplete";
+import { useCart } from "@/context/CartContext";
 
 const Navbar = () => {
+  const cart = useCart();
   const [categoriesOpen, setCategoriesOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -229,6 +231,22 @@ const Navbar = () => {
               Admin
             </Link>
 
+            {/* Carrito de compras */}
+            <div className="relative">
+              <Link
+                href="/cart"
+                className="flex items-center text-gray-600 hover:text-white hover:bg-gradient-to-r hover:from-green-500 hover:to-green-600 transition-all duration-200 px-3 py-2 rounded-md font-medium"
+              >
+                <ShoppingCart size={20} className="mr-2" />
+                <span>Carrito</span>
+                {cart.getCartCount() > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                    {cart.getCartCount()}
+                  </span>
+                )}
+              </Link>
+            </div>
+
             <div className="relative">
               <button
                 className="flex items-center text-gray-600 hover:text-green-500 transition-colors p-2 rounded-full hover:bg-green-50"
@@ -248,70 +266,69 @@ const Navbar = () => {
               >
                 <Link
                   href="/perfil"
-                  className="block px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-green-500"
+                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-600"
                 >
-                  Mi Perfil
+                  Mi perfil
                 </Link>
                 <Link
                   href="/pedidos"
-                  className="block px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-green-500"
+                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-600"
                 >
-                  Mis Pedidos
+                  Mis pedidos
                 </Link>
-                <hr className="my-1" />
+                <div className="border-t border-gray-100 my-1"></div>
                 <Link
-                  href="/auth/logout"
-                  className="block px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-green-500"
+                  href="/logout"
+                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-600"
                 >
-                  Cerrar Sesión
+                  Cerrar sesión
                 </Link>
               </div>
             </div>
-
-            <Link
-              href="/carrito"
-              className="flex items-center text-gray-600 hover:text-green-500 transition-colors p-2 rounded-full hover:bg-green-50 relative"
-              aria-label="Carrito"
-            >
-              <div className="relative">
-                <ShoppingCart size={20} />
-                <span className="absolute -top-1 -right-1 bg-gradient-to-r from-green-500 to-green-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center shadow-sm">
-                  0
-                </span>
-              </div>
-            </Link>
           </div>
 
-          {/* Botones móviles */}
+          {/* Botones de acción móvil */}
           <div className="flex md:hidden items-center space-x-2">
             <button
-              className="text-gray-600 hover:text-green-500 transition-colors p-2"
+              className="p-2 text-gray-600 hover:text-green-500 transition-colors rounded-full hover:bg-green-50"
               onClick={toggleSearch}
               aria-label="Buscar"
             >
               <Search size={20} />
             </button>
+
+            {/* Carrito móvil */}
             <Link
-              href="/carrito"
-              className="text-gray-600 hover:text-green-500 transition-colors p-2 relative"
+              href="/cart"
+              className="p-2 text-gray-600 hover:text-green-500 transition-colors rounded-full hover:bg-green-50 relative"
               aria-label="Carrito"
             >
               <ShoppingCart size={20} />
-              <span className="absolute -top-1 -right-1 bg-gradient-to-r from-green-500 to-green-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center shadow-sm">
-                0
-              </span>
+              {cart.getCartCount() > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                  {cart.getCartCount()}
+                </span>
+              )}
             </Link>
+
+            <button
+              className="p-2 text-gray-600 hover:text-green-500 transition-colors rounded-full hover:bg-green-50"
+              onClick={toggleUserMenu}
+              aria-label="Usuario"
+            >
+              <User size={20} />
+            </button>
           </div>
         </div>
+      </div>
 
-        {/* Barra de búsqueda móvil con autocompletado */}
-        <div
-          className={`transition-all duration-300 overflow-hidden ${
-            searchOpen ? "h-14 pb-4" : "h-0"
-          }`}
-        >
-          <SearchAutocomplete onSearch={handleSearch} className="w-full" />
-        </div>
+      {/* Barra de búsqueda móvil con autocompletado */}
+      <div
+        className={`transition-all duration-300 overflow-hidden ${
+          searchOpen ? "h-14 pb-4" : "h-0"
+        }`}
+      >
+        <SearchAutocomplete onSearch={handleSearch} className="w-full" />
       </div>
 
       {/* Menú de categorías desplegable (escritorio) */}
